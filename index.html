@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Moment Photo Booth</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&family=Bebas+Neue&family=Cherry+Bomb+One&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-pink: #eb4891;
+      --bg-soft: #faf4f7;
+    }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-soft);
+      background-image: 
+        radial-gradient(at 0% 0%, hsla(338,100%,91%,0.5) 0, transparent 50%), 
+        radial-gradient(at 100% 0%, hsla(225,100%,91%,0.5) 0, transparent 50%);
+      color: #334155;
+      min-height: 100vh;
+      margin: 0; padding: 0;
+      overflow-x: hidden;
+    }
+
+    .serif { font-family: 'Playfair Display', serif; }
+    .bebas { font-family: 'Bebas Neue', cursive; }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.03);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-pink), #9f7aea);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-primary:hover { transform: translateY(-2px); opacity: 0.95; }
+
+    .template-option {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 3px solid transparent;
+      overflow: hidden;
+      position: relative;
+    }
+    .template-option.active { border-color: var(--primary-pink); background: white; }
+
+    .camera-preview {
+      background: #000;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      border: 4px solid white;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      position: relative;
+      width: 100%;
+      aspect-ratio: var(--cam-ratio, 16 / 9);
+    }
+
+    @media (max-width: 768px) {
+      .camera-preview { max-height: 45vh; width: auto; margin: 0 auto; }
+    }
+    
+    #webcam { transform: scaleX(-1); width: 100%; height: 100%; object-fit: cover; }
+
+    .flash {
+      position: fixed; inset: 0; background: white; z-index: 1000;
+      opacity: 0; pointer-events: none;
+    }
+    .flash.active { animation: flash-anim 0.6s ease-out; }
+    @keyframes flash-anim { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+    .thumbnail-slot {
+      width: clamp(50px, 15vw, 100px);
+      aspect-ratio: var(--cam-ratio, 16 / 9);
+      background: rgba(226, 232, 240, 0.5);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      border: 2px solid white;
+      transition: all 0.3s;
+    }
+    .thumbnail-slot.active { border-color: var(--primary-pink); transform: scale(1.05); }
+
+    .booth-container { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    .booth-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1rem; }
+
+    @media (min-width: 1024px) { .booth-content { flex-direction: row; } }
+
+    .filter-warm { filter: sepia(0.3) saturate(1.5) contrast(1.1) !important; }
+    .filter-pink { filter: hue-rotate(330deg) saturate(1.4) brightness(1.1) !important; }
+    .filter-vintage { filter: sepia(0.6) contrast(0.8) brightness(0.9) !important; }
+    .filter-b-w { filter: grayscale(1) contrast(1.2) !important; }
+    .filter-none { filter: none !important; }
+
+    .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+  <div id="flash-effect" class="flash"></div>
+
+  <!-- VIEW: DASHBOARD -->
+  <div id="view-dashboard" class="max-w-[1400px] mx-auto px-6 py-12 text-center flex flex-col items-center min-h-screen justify-center">
+    <div class="space-y-6 max-w-2xl animate-fade-in text-center flex flex-col items-center">
+      <span class="px-4 py-1 bg-pink-100 text-pink-500 rounded-full text-[10px] font-extrabold uppercase tracking-[0.2em]">Moment Booth 2026</span>
+      <h2 class="serif text-5xl md:text-7xl font-bold text-slate-900 leading-tight italic">Moment <span class="text-pink-500 not-italic">Photo</span></h2>
+      <p class="text-slate-500 text-base md:text-lg italic">Abadikan momenmu dengan sentuhan AI Storyteller.</p>
+      <button onclick="showBooth()" class="btn-primary text-white px-12 md:px-16 py-4 md:py-5 rounded-2xl font-extrabold text-lg md:text-xl shadow-xl transform transition active:scale-95 w-full md:w-auto">
+        MULAI SESI FOTO
+      </button>
+      <p class="mt-8 text-[9px] text-slate-300 font-bold tracking-widest uppercase italic">Copyright Moment by rikyrqq</p>
+    </div>
+  </div>
+
+  <!-- VIEW: BOOTH -->
+  <div id="view-booth" class="hidden booth-container animate-fade-in">
+    <header class="w-full px-4 md:px-6 pt-4 pb-2">
+      <div class="glass-card p-3 px-6 md:px-8 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="bg-pink-500 p-1.5 rounded-xl text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          </div>
+          <h1 class="serif text-base md:text-lg font-bold text-slate-800 tracking-tight">Moment</h1>
+        </div>
+        <button onclick="location.reload()" class="text-slate-400 hover:text-pink-500 transition text-[9px] font-bold uppercase">Reset</button>
+      </div>
+    </header>
+
+    <div class="booth-content max-w-[1400px] mx-auto w-full gap-4">
+      <div class="w-full lg:w-[380px] flex flex-col gap-3 order-2 lg:order-1 overflow-y-auto custom-scrollbar">
+        <!-- FRAME PICKER -->
+        <div id="built-in-frame-panel" class="glass-card p-4 overflow-hidden">
+          <h3 class="serif text-sm font-bold text-slate-800 mb-3">Pilih Bingkai ✨</h3>
+          <div class="flex overflow-x-auto gap-3 pb-3 custom-scrollbar mb-4">
+            <div onclick="selectTemplate('minimalist', this)" class="template-option glass-card p-2 flex-shrink-0 w-24 active flex flex-col items-center">
+                <div class="w-10 h-14 bg-white border border-slate-200 rounded mb-1"></div>
+                <p class="text-[7px] font-bold text-slate-500 uppercase">Minimal</p>
+            </div>
+            <div onclick="selectTemplate('sweetheart', this)" class="template-option glass-card p-2 flex-shrink-0 w-24 flex flex-col items-center text-pink-400">
+                <div class="w-10 h-14 bg-[#fff1f7] border border-pink-100 rounded mb-1 flex items-center justify-center text-[10px]">💖</div>
+                <p class="text-[7px] font-bold uppercase">Sweet</p>
+            </div>
+            <div onclick="selectTemplate('retro', this)" class="template-option glass-card p-2 flex-shrink-0 w-24 flex flex-col items-center text-slate-800">
+                <div class="w-10 h-14 bg-[#1a1a1a] border border-slate-600 rounded mb-1"></div>
+                <p class="text-[7px] font-bold uppercase">Retro</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+              <div>
+                  <label class="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Filter</label>
+                  <select id="filter-selector" onchange="applyFilter(this.value)" class="w-full p-2 bg-white/50 border border-slate-200 rounded-xl text-[10px] font-semibold focus:outline-none">
+                      <option value="filter-none">Natural</option>
+                      <option value="filter-pink">Rosie</option>
+                      <option value="filter-warm">Warm</option>
+                      <option value="filter-vintage">Vintage</option>
+                      <option value="filter-b-w">Noir</option>
+                  </select>
+              </div>
+              <div>
+                  <label class="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Pose</label>
+                  <div class="flex gap-1">
+                      <button onclick="setFrames(2, this)" class="btn-layout flex-1 py-2 bg-white rounded-lg text-[9px] font-bold border border-slate-200">2F</button>
+                      <button onclick="setFrames(3, this)" class="btn-layout flex-1 py-2 bg-white rounded-lg text-[9px] font-bold border border-slate-200">3F</button>
+                      <button onclick="setFrames(4, this)" class="btn-layout flex-1 py-2 bg-pink-500 text-white rounded-lg text-[9px] font-bold border border-pink-500 active">4F</button>
+                  </div>
+              </div>
+          </div>
+        </div>
+
+        <!-- CUSTOM UPLOAD PANEL -->
+        <div class="glass-card p-4 bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
+            <h3 class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-2">Upload PNG Kustom 📐</h3>
+            <div class="bg-white/80 p-3 rounded-xl border border-indigo-50 space-y-1 mb-3 text-[9px]">
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400 font-medium">Lebar x Tinggi:</span>
+                    <span class="font-bold text-indigo-600"><span id="info-width">690px</span> x <span id="info-height">1813px</span></span>
+                </div>
+            </div>
+            
+            <div class="space-y-2">
+                <input type="file" id="custom-frame-input" accept="image/png" class="hidden" onchange="handleCustomFrame(this)">
+                <button id="btn-upload-custom" onclick="document.getElementById('custom-frame-input').click()" class="bg-white text-indigo-600 border border-indigo-200 py-2.5 rounded-xl text-[9px] font-extrabold w-full hover:bg-indigo-50 transition">PILIH FILE PNG</button>
+                <div id="custom-active-status" class="hidden flex items-center justify-between bg-green-50 p-2 rounded-lg border border-green-100">
+                    <span class="text-[8px] font-bold text-green-600 uppercase">Kustom Aktif ✅</span>
+                    <button onclick="clearCustomFrame()" class="text-[8px] font-bold text-red-500 underline">Hapus</button>
+                </div>
+                <p class="text-[7px] text-slate-400 italic text-center">*Foto diletakkan di atas mood namun di bawah bingkai upload.</p>
+            </div>
+        </div>
+        
+        <button id="main-action-btn" onclick="startFullSessi()" class="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-white font-extrabold text-lg shadow-lg mt-auto">AMBIL FOTO 📸</button>
+      </div>
+
+      <!-- CAMERA AREA -->
+      <div class="flex-grow flex flex-col min-h-0 order-1 lg:order-2">
+        <div class="camera-preview mx-auto">
+          <video id="webcam" autoplay playsinline class="filter-none"></video>
+          <div id="countdown" class="serif absolute inset-0 flex items-center justify-center text-white text-[8rem] md:text-[12rem] font-black italic hidden z-20 drop-shadow-lg">3</div>
+          <div id="review-timer-container" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full font-bold text-[10px] hidden z-30 flex items-center gap-2">
+              <span>Next:</span><span id="review-countdown-num" class="text-pink-400 font-black text-base">5</span>
+          </div>
+          <div id="captured-overlay" class="absolute inset-0 z-10 hidden bg-black">
+              <img id="captured-img" class="w-full h-full object-cover transform scaleX-[-1]" src="">
+          </div>
+          <div id="capture-status" class="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full font-extrabold text-slate-800 shadow-xl hidden z-30 flex items-center gap-2 border border-white text-[9px]">
+            <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+            POSE <span id="photo-count">1</span> / <span id="total-count-display">4</span>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-col items-center gap-3">
+            <div id="thumbnail-row" class="flex flex-wrap justify-center gap-2"></div>
+            <div id="pose-controls" class="hidden w-full flex justify-center gap-3">
+                <button id="retake-btn" onclick="retakeCurrentPhoto()" class="bg-slate-100 text-slate-700 px-6 py-2.5 rounded-xl font-extrabold text-xs border border-slate-200">ULANG 🔄</button>
+                <button id="keep-btn" onclick="keepAndNextManually()" class="bg-green-500 text-white px-6 py-2.5 rounded-xl font-extrabold text-xs shadow-md">LANJUT ✨</button>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: RESULT -->
+  <div id="view-result" class="hidden max-w-6xl mx-auto px-4 py-8 flex flex-col items-center animate-fade-in">
+    <h2 class="serif text-4xl md:text-5xl font-bold text-slate-900 mb-6 text-center">Perfect! ✨</h2>
+    <div class="flex flex-col md:flex-row gap-8 md:gap-12 items-center md:items-start justify-center w-full">
+      <div id="strip-container" class="bg-white p-4 md:p-6 rounded-sm shadow-2xl transition-all duration-700 max-w-[280px] md:max-w-[340px] w-full overflow-hidden">
+        <canvas id="final-canvas" class="w-full bg-slate-50"></canvas>
+      </div>
+      <div class="flex flex-col gap-4 w-full max-w-sm">
+        <div class="glass-card p-6 bg-gradient-to-br from-white to-pink-50">
+          <h3 class="serif text-lg font-bold text-slate-800 mb-4 tracking-tight italic">AI Storyteller ✨</h3>
+          <div class="grid grid-cols-2 gap-2 mb-4">
+            <button onclick="generateFuturePrediction()" class="bg-indigo-600 text-white py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-wider">Ramalan</button>
+            <button onclick="analyzeMood()" class="bg-purple-600 text-white py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-wider">Mood</button>
+          </div>
+          <div id="ai-response-container" class="hidden">
+            <div id="ai-response-content" class="text-slate-600 italic text-xs leading-relaxed bg-white/60 p-4 rounded-xl border border-pink-100">...</div>
+          </div>
+        </div>
+        <button onclick="downloadPhoto()" class="w-full py-4 bg-green-500 text-white font-extrabold rounded-2xl shadow-lg text-base">UNDUH FOTO 📥</button>
+        <button onclick="showBooth()" class="w-full py-4 border-2 border-pink-100 text-pink-500 font-extrabold rounded-2xl hover:bg-white transition text-[10px] uppercase">FOTO LAGI 🔄</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const apiKey = ""; 
+    let stream = null;
+    let selectedFrameCount = 4;
+    let capturedPhotos = []; 
+    let currentPhotoIdx = 0;
+    let selectedTemplate = 'minimalist';
+    let currentMoodAnalysis = "";
+    let currentFuturePrediction = "";
+    let customFrameImg = null;
+    let reviewTimerInterval = null;
+    let isMobileView = false;
+
+    const video = document.getElementById('webcam');
+    const actionBtn = document.getElementById('main-action-btn');
+    const poseControls = document.getElementById('pose-controls');
+    const keepBtn = document.getElementById('keep-btn');
+    const overlay = document.getElementById('captured-overlay');
+    const capturedImg = document.getElementById('captured-img');
+    const thumbRow = document.getElementById('thumbnail-row');
+    const reviewTimerContainer = document.getElementById('review-timer-container');
+    const reviewNum = document.getElementById('review-countdown-num');
+
+    const frameStyles = {
+        minimalist: { bg: '#ffffff', header: 'MOMENT', footer: 'MOMENT BY RIKYRQQ - 2026', font: 'Plus Jakarta Sans', textColor: '#334155', rounded: true },
+        sweetheart: { bg: '#fff1f7', header: 'LOVE STORY', footer: 'MOMENT BY RIKYRQQ - 2026', font: 'Cherry Bomb One', textColor: '#eb4891', rounded: true },
+        retro: { bg: '#1a1a1a', header: 'PORTRA 400', footer: 'SAFETY FILM - 2026', font: 'monospace', textColor: '#f5f5f5', rounded: false }
+    };
+
+    function checkDevice() {
+        isMobileView = window.innerWidth <= 768;
+        const ratio = isMobileView ? "9 / 16" : "16 / 9";
+        document.documentElement.style.setProperty('--cam-ratio', ratio);
+        updateSizeInfo();
+    }
+
+    function updateSizeInfo() {
+        const margin = 45; const headerH = 80; const brandingH = 60;
+        const pWidth = isMobileView ? 450 : 600;
+        const pHeight = isMobileView ? 800 : 337;
+        
+        // Base content space
+        const photoAreaH = (selectedFrameCount * (pHeight + margin));
+        const aiAreaH = 200; // Buffer for AI text
+        const totalHeight = headerH + margin + photoAreaH + aiAreaH + brandingH;
+        
+        document.getElementById('info-width').innerText = (pWidth + (margin * 2)) + "px";
+        document.getElementById('info-height').innerText = Math.round(totalHeight) + "px";
+    }
+
+    function showBooth() {
+      checkDevice();
+      capturedPhotos = []; currentPhotoIdx = 0; currentMoodAnalysis = ""; currentFuturePrediction = "";
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-result').classList.add('hidden');
+      document.getElementById('view-booth').classList.remove('hidden');
+      overlay.classList.add('hidden'); actionBtn.classList.remove('hidden');
+      poseControls.classList.add('hidden'); 
+      document.getElementById('capture-status').classList.add('hidden');
+      reviewTimerContainer.classList.add('hidden');
+      initThumbnails(); startCamera();
+    }
+
+    async function startCamera() {
+      if (stream) stream.getTracks().forEach(track => track.stop());
+      try {
+        const constraints = { video: { width: { ideal: isMobileView?720:1280 }, height: { ideal: isMobileView?1280:720 }, aspectRatio: isMobileView?0.5625:1.7778, facingMode: "user" } };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+      } catch (err) { console.error(err); }
+    }
+
+    function initThumbnails() {
+        thumbRow.innerHTML = "";
+        for(let i=0; i < selectedFrameCount; i++) {
+            const slot = document.createElement('div');
+            slot.id = `slot-${i}`;
+            slot.className = "thumbnail-slot flex items-center justify-center text-[7px] font-bold text-slate-400 uppercase";
+            slot.innerText = `P${i+1}`;
+            thumbRow.appendChild(slot);
+        }
+        document.getElementById('total-count-display').innerText = selectedFrameCount;
+    }
+
+    function setFrames(count, btn) {
+      selectedFrameCount = count; checkDevice(); initThumbnails();
+      document.querySelectorAll('.btn-layout').forEach(b => b.classList.remove('bg-pink-500', 'text-white', 'border-pink-500'));
+      btn.classList.add('bg-pink-500', 'text-white', 'border-pink-500');
+    }
+
+    function selectTemplate(id, el) {
+        selectedTemplate = id;
+        document.querySelectorAll('.template-option').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function applyFilter(f) { video.className = f; }
+
+    function handleCustomFrame(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => { customFrameImg = img; document.getElementById('custom-active-status').classList.remove('hidden'); document.getElementById('built-in-frame-panel').classList.add('opacity-40', 'pointer-events-none'); updateSizeInfo(); };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function clearCustomFrame() {
+        customFrameImg = null; document.getElementById('custom-frame-input').value = "";
+        document.getElementById('custom-active-status').classList.add('hidden');
+        document.getElementById('built-in-frame-panel').classList.remove('opacity-40', 'pointer-events-none');
+    }
+
+    function startFullSessi() {
+        currentPhotoIdx = 0; capturedPhotos = new Array(selectedFrameCount).fill(null);
+        actionBtn.classList.add('hidden'); triggerCountdown();
+    }
+
+    function triggerCountdown() {
+        clearInterval(reviewTimerInterval); reviewTimerContainer.classList.add('hidden');
+        overlay.classList.add('hidden'); poseControls.classList.add('hidden');
+        document.getElementById('capture-status').classList.remove('hidden');
+        document.getElementById('photo-count').innerText = currentPhotoIdx + 1;
+        document.querySelectorAll('.thumbnail-slot').forEach(s => s.classList.remove('active'));
+        document.getElementById(`slot-${currentPhotoIdx}`).classList.add('active');
+
+        let count = 3; const countEl = document.getElementById('countdown');
+        countEl.innerText = count; countEl.classList.remove('hidden');
+        const timer = setInterval(() => {
+            count--; if (count > 0) { countEl.innerText = count; } 
+            else { clearInterval(timer); countEl.classList.add('hidden'); capturePhoto(); }
+        }, 1000);
+    }
+
+    function capturePhoto() {
+        const flash = document.getElementById('flash-effect'); flash.classList.add('active'); setTimeout(() => flash.classList.remove('active'), 500);
+        const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d'); ctx.filter = getComputedStyle(video).filter; ctx.translate(canvas.width, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        capturedPhotos[currentPhotoIdx] = dataUrl;
+        document.getElementById(`slot-${currentPhotoIdx}`).innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover transform scaleX-[-1] rounded-lg">`;
+        capturedImg.src = dataUrl; overlay.classList.remove('hidden'); poseControls.classList.remove('hidden');
+        keepBtn.innerText = currentPhotoIdx + 1 === selectedFrameCount ? "FINISH ✨" : "KEEP ✨";
+        startReviewTimer();
+    }
+
+    function startReviewTimer() {
+        let timeLeft = 5; reviewNum.innerText = timeLeft; reviewTimerContainer.classList.remove('hidden');
+        clearInterval(reviewTimerInterval);
+        reviewTimerInterval = setInterval(() => {
+            timeLeft--; if (timeLeft > 0) { reviewNum.innerText = timeLeft; } 
+            else { clearInterval(reviewTimerInterval); keepAndNext(); }
+        }, 1000);
+    }
+
+    function retakeCurrentPhoto() { clearInterval(reviewTimerInterval); triggerCountdown(); }
+    function keepAndNextManually() { clearInterval(reviewTimerInterval); keepAndNext(); }
+    function keepAndNext() { if (currentPhotoIdx + 1 < selectedFrameCount) { currentPhotoIdx++; triggerCountdown(); } else { finishSession(); } }
+
+    function finishSession() {
+      generateFinalStrip();
+      document.getElementById('view-booth').classList.add('hidden');
+      document.getElementById('view-result').classList.remove('hidden');
+      if (stream) stream.getTracks().forEach(track => track.stop());
+    }
+
+    function getWrappedHeight(ctx, text, maxWidth, lineHeight) {
+        const words = text.split(' '); let lines = 1; let line = '';
+        for(let n = 0; n < words.length; n++) {
+            let testLine = line + words[n] + ' '; let metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && n > 0) { line = words[n] + ' '; lines++; } else { line = testLine; }
+        }
+        return lines * lineHeight;
+    }
+
+    function generateFinalStrip() {
+      const margin = 45; 
+      const pWidth = isMobileView ? 450 : 600; 
+      const pHeight = isMobileView ? 800 : 337; 
+      const headerH = 80; const brandingH = 60; 
+      
+      const calcCanvas = document.createElement('canvas');
+      const calcCtx = calcCanvas.getContext('2d');
+      calcCtx.font = "italic 14px sans-serif";
+      
+      const boxW = pWidth; const textPadding = 40;
+      let moodH = 0; let predH = 0;
+      if (currentMoodAnalysis) moodH = getWrappedHeight(calcCtx, currentMoodAnalysis, boxW - textPadding, 22) + 50;
+      if (currentFuturePrediction) predH = getWrappedHeight(calcCtx, currentFuturePrediction, boxW - textPadding, 22) + 50;
+      
+      const photoAreaH = (selectedFrameCount * (pHeight + margin));
+      const sWidth = pWidth + (margin * 2);
+      const sHeight = headerH + margin + photoAreaH + 20 + (moodH ? moodH + 10 : 0) + (predH ? predH + 10 : 0) + brandingH;
+      
+      const canvas = document.getElementById('final-canvas');
+      canvas.width = sWidth; canvas.height = sHeight;
+      const ctx = canvas.getContext('2d');
+      const style = frameStyles[selectedTemplate];
+
+      // LAYER 1: BACKGROUND
+      ctx.fillStyle = customFrameImg ? "#ffffff" : style.bg;
+      ctx.fillRect(0, 0, sWidth, sHeight);
+
+      // LAYER 2: BUILT-IN TEXT (If no custom frame)
+      if (!customFrameImg) {
+          ctx.fillStyle = style.textColor; ctx.textAlign = "center";
+          ctx.font = `bold ${selectedTemplate==='sweetheart'?'40':'35'}px '${style.font}'`;
+          ctx.fillText(style.header, sWidth/2, 60);
+      }
+
+      let drawY = headerH + margin;
+
+      // DRAW ASYNC PHOTOS
+      let loaded = 0;
+      capturedPhotos.forEach((data, i) => {
+        const img = new Image();
+        img.onload = () => {
+          const x = margin; const y = drawY + (i * (pHeight + margin));
+          ctx.save();
+          ctx.beginPath();
+          const r = (!customFrameImg && style.rounded) ? 30 : 0;
+          if (ctx.roundRect) ctx.roundRect(x, y, pWidth, pHeight, r); else ctx.rect(x, y, pWidth, pHeight);
+          ctx.clip();
+          ctx.drawImage(img, x, y, pWidth, pHeight);
+          ctx.restore();
+
+          loaded++;
+          if (loaded === capturedPhotos.length) {
+            
+            // LAYER 3: AI TEXT CONTENT (Drawn BELOW photos area)
+            let boxY = drawY + photoAreaH + 15;
+            const textColor = customFrameImg ? "#334155" : style.textColor;
+
+            if (currentMoodAnalysis) {
+              ctx.fillStyle = "rgba(255,255,255,0.6)"; // Semi-trans so frame is visible behind
+              if (ctx.roundRect) ctx.roundRect(margin, boxY, boxW, moodH, 15); else ctx.rect(margin, boxY, boxW, moodH);
+              ctx.fill(); 
+              ctx.fillStyle = "#eb4891"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center";
+              ctx.fillText("Mood Analysis ✨", sWidth/2, boxY + 25);
+              ctx.fillStyle = textColor; ctx.font = "italic 14px sans-serif";
+              wrapText(ctx, currentMoodAnalysis, sWidth/2, boxY + 48, boxW - textPadding, 20);
+              boxY += moodH + 10;
+            }
+
+            if (currentFuturePrediction) {
+              ctx.fillStyle = "rgba(255,255,255,0.7)"; 
+              if (ctx.roundRect) ctx.roundRect(margin, boxY, boxW, predH, 15); else ctx.rect(margin, boxY, boxW, predH);
+              ctx.fill(); 
+              ctx.fillStyle = "#6366f1"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center";
+              ctx.fillText("Ramalan Masa Depan 🔮", sWidth/2, boxY + 25);
+              ctx.fillStyle = textColor; ctx.font = "italic 14px sans-serif";
+              wrapText(ctx, currentFuturePrediction, sWidth/2, boxY + 48, boxW - textPadding, 20);
+            }
+
+            // LAYER 4: CUSTOM FRAME (Drawn LAST - ON TOP OF EVERYTHING)
+            if (customFrameImg) {
+                ctx.globalAlpha = 1.0;
+                ctx.drawImage(customFrameImg, 0, 0, sWidth, sHeight);
+            }
+
+            if (!customFrameImg) {
+                ctx.fillStyle = style.textColor; ctx.font = "bold 10px sans-serif"; ctx.letterSpacing = "3px"; ctx.textAlign = "center";
+                ctx.globalAlpha = 0.4; ctx.fillText(style.footer, sWidth/2, sHeight - 25);
+            }
+          }
+        };
+        img.src = data;
+      });
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' '); let line = '';
+      for(let n = 0; n < words.length; n++) {
+        let testLine = line + words[n] + ' '; let metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) { ctx.fillText(line, x, y); line = words[n] + ' '; y += lineHeight; }
+        else { line = testLine; }
+      } ctx.fillText(line, x, y);
+    }
+
+    function downloadPhoto() {
+      const link = document.createElement('a'); link.download = 'moment-2026.png'; link.href = document.getElementById('final-canvas').toDataURL('image/png'); link.click();
+    }
+
+    async function callGemini(prompt, base64Image = null) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const parts = [{ text: prompt }]; if (base64Image) parts.push({ inlineData: { mimeType: "image/jpeg", data: base64Image } });
+      try { const res = await fetch(url, { method: 'POST', body: JSON.stringify({ contents: [{ parts }] }) }); const data = await res.json(); return data.candidates?.[0]?.content?.parts?.[0]?.text; } 
+      catch (e) { return null; }
+    }
+
+    async function generateFuturePrediction() {
+      const content = document.getElementById('ai-response-content'); document.getElementById('ai-response-container').classList.remove('hidden');
+      content.innerText = "AI sedang meramal...";
+      const res = await callGemini("Bikin 1 ramalan masa depan positif sangat pendek Bahasa Indonesia. Maks 15 kata.", capturedPhotos[0].split(',')[1]);
+      currentFuturePrediction = res || "Masa depan cerah!"; content.innerText = currentFuturePrediction; generateFinalStrip(); 
+    }
+
+    async function analyzeMood() {
+      const content = document.getElementById('ai-response-content'); document.getElementById('ai-response-container').classList.remove('hidden');
+      content.innerText = "Menganalisis vibe...";
+      const res = await callGemini("Analisis mood foto ini dalam 1 kalimat pendek puitis Bahasa Indonesia. Maks 15 kata.", capturedPhotos[0].split(',')[1]);
+      currentMoodAnalysis = res || "Vibe yang indah!"; content.innerText = currentMoodAnalysis; generateFinalStrip(); 
+    }
+
+    window.addEventListener('resize', checkDevice);
+    checkDevice();
+  </script>
+</body>
+</html>
