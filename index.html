@@ -48,7 +48,7 @@
       overflow: hidden;
       position: relative;
     }
-    .template-option.active { border-color: var(--primary-pink); background: white; }
+    .template-option.active { border-color: var(--primary-pink); background: white; transform: scale(1.05); }
 
     .camera-preview {
       background: #000;
@@ -58,11 +58,12 @@
       box-shadow: 0 20px 40px rgba(0,0,0,0.1);
       position: relative;
       width: 100%;
+      /* Dynamic Aspect Ratio 16:9 or 3:4 */
       aspect-ratio: var(--cam-ratio, 16 / 9);
     }
 
     @media (max-width: 768px) {
-      .camera-preview { max-height: 45vh; width: auto; margin: 0 auto; }
+      .camera-preview { max-height: 48vh; width: auto; margin: 0 auto; }
     }
     
     #webcam { transform: scaleX(-1); width: 100%; height: 100%; object-fit: cover; }
@@ -75,28 +76,29 @@
     @keyframes flash-anim { 0% { opacity: 1; } 100% { opacity: 0; } }
 
     .thumbnail-slot {
-      width: clamp(50px, 15vw, 100px);
+      width: clamp(60px, 18vw, 110px);
       aspect-ratio: var(--cam-ratio, 16 / 9);
       background: rgba(226, 232, 240, 0.5);
-      border-radius: 0.5rem;
+      border-radius: 0.6rem;
       overflow: hidden;
       border: 2px solid white;
       transition: all 0.3s;
     }
-    .thumbnail-slot.active { border-color: var(--primary-pink); transform: scale(1.05); }
+    .thumbnail-slot.active { border-color: var(--primary-pink); transform: translateY(-3px); }
 
     .booth-container { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    .booth-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1rem; }
+    .booth-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0.75rem; }
 
-    @media (min-width: 1024px) { .booth-content { flex-direction: row; } }
+    @media (min-width: 1024px) { .booth-content { flex-direction: row; padding: 1.5rem; } }
 
+    /* Filters */
     .filter-warm { filter: sepia(0.3) saturate(1.5) contrast(1.1) !important; }
     .filter-pink { filter: hue-rotate(330deg) saturate(1.4) brightness(1.1) !important; }
     .filter-vintage { filter: sepia(0.6) contrast(0.8) brightness(0.9) !important; }
     .filter-b-w { filter: grayscale(1) contrast(1.2) !important; }
     .filter-none { filter: none !important; }
 
-    .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
   </style>
 </head>
@@ -109,7 +111,7 @@
     <div class="space-y-6 max-w-2xl animate-fade-in text-center flex flex-col items-center">
       <span class="px-4 py-1 bg-pink-100 text-pink-500 rounded-full text-[10px] font-extrabold uppercase tracking-[0.2em]">Moment Booth 2026</span>
       <h2 class="serif text-5xl md:text-7xl font-bold text-slate-900 leading-tight italic">Moment <span class="text-pink-500 not-italic">Photo</span></h2>
-      <p class="text-slate-500 text-base md:text-lg italic">Abadikan momenmu dengan sentuhan AI Storyteller.</p>
+      <p class="text-slate-500 text-base md:text-lg italic">Abadikan momenmu dengan rasio studio profesional.</p>
       <button onclick="showBooth()" class="btn-primary text-white px-12 md:px-16 py-4 md:py-5 rounded-2xl font-extrabold text-lg md:text-xl shadow-xl transform transition active:scale-95 w-full md:w-auto">
         MULAI SESI FOTO
       </button>
@@ -119,106 +121,107 @@
 
   <!-- VIEW: BOOTH -->
   <div id="view-booth" class="hidden booth-container animate-fade-in">
-    <header class="w-full px-4 md:px-6 pt-4 pb-2">
+    <header class="w-full px-4 md:px-6 pt-3 pb-1">
       <div class="glass-card p-3 px-6 md:px-8 flex justify-between items-center">
         <div class="flex items-center gap-3">
-          <div class="bg-pink-500 p-1.5 rounded-xl text-white">
+          <div class="bg-pink-500 p-1.5 rounded-xl text-white shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
           </div>
           <h1 class="serif text-base md:text-lg font-bold text-slate-800 tracking-tight">Moment</h1>
         </div>
-        <button onclick="location.reload()" class="text-slate-400 hover:text-pink-500 transition text-[9px] font-bold uppercase">Reset</button>
+        <button onclick="location.reload()" class="text-slate-400 hover:text-pink-500 transition text-[9px] font-bold uppercase border-b-2 border-transparent hover:border-pink-500">Reset</button>
       </div>
     </header>
 
     <div class="booth-content max-w-[1400px] mx-auto w-full gap-4">
+      <!-- PANEL KONTROL SELULER (DI BAWAH KAMERA) / DESKTOP (DI KIRI) -->
       <div class="w-full lg:w-[380px] flex flex-col gap-3 order-2 lg:order-1 overflow-y-auto custom-scrollbar">
         <!-- FRAME PICKER -->
         <div id="built-in-frame-panel" class="glass-card p-4 overflow-hidden">
           <h3 class="serif text-sm font-bold text-slate-800 mb-3">Pilih Bingkai ✨</h3>
-          <div class="flex overflow-x-auto gap-3 pb-3 custom-scrollbar mb-4">
-            <div onclick="selectTemplate('minimalist', this)" class="template-option glass-card p-2 flex-shrink-0 w-24 active flex flex-col items-center">
-                <div class="w-10 h-14 bg-white border border-slate-200 rounded mb-1"></div>
-                <p class="text-[7px] font-bold text-slate-500 uppercase">Minimal</p>
+          <div class="flex overflow-x-auto gap-4 pb-3 custom-scrollbar mb-4">
+            <div onclick="selectTemplate('minimalist', this)" class="template-option glass-card p-2 flex-shrink-0 w-28 active flex flex-col items-center">
+                <div class="w-12 h-16 bg-white border border-slate-200 rounded-lg mb-1 shadow-sm"></div>
+                <p class="text-[9px] font-bold text-slate-500 uppercase">Minimalist</p>
             </div>
-            <div onclick="selectTemplate('sweetheart', this)" class="template-option glass-card p-2 flex-shrink-0 w-24 flex flex-col items-center text-pink-400">
-                <div class="w-10 h-14 bg-[#fff1f7] border border-pink-100 rounded mb-1 flex items-center justify-center text-[10px]">💖</div>
-                <p class="text-[7px] font-bold uppercase">Sweet</p>
+            <div onclick="selectTemplate('sweetheart', this)" class="template-option glass-card p-2 flex-shrink-0 w-28 flex flex-col items-center text-pink-400">
+                <div class="w-12 h-16 bg-[#fff1f7] border border-pink-100 rounded-lg mb-1 flex items-center justify-center text-xs shadow-sm">💖</div>
+                <p class="text-[9px] font-bold uppercase">Sweetheart</p>
             </div>
-            <div onclick="selectTemplate('retro', this)" class="template-option glass-card p-2 flex-shrink-0 w-24 flex flex-col items-center text-slate-800">
-                <div class="w-10 h-14 bg-[#1a1a1a] border border-slate-600 rounded mb-1"></div>
-                <p class="text-[7px] font-bold uppercase">Retro</p>
+            <div onclick="selectTemplate('retro', this)" class="template-option glass-card p-2 flex-shrink-0 w-28 flex flex-col items-center text-slate-800">
+                <div class="w-12 h-16 bg-[#1a1a1a] border border-slate-600 rounded-lg mb-1 shadow-sm"></div>
+                <p class="text-[9px] font-bold uppercase">Retro Noir</p>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-2 gap-3 mt-1">
               <div>
-                  <label class="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Filter</label>
-                  <select id="filter-selector" onchange="applyFilter(this.value)" class="w-full p-2 bg-white/50 border border-slate-200 rounded-xl text-[10px] font-semibold focus:outline-none">
+                  <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Filter Warna</label>
+                  <select id="filter-selector" onchange="applyFilter(this.value)" class="w-full p-2.5 bg-white/50 border border-slate-200 rounded-xl text-[11px] font-semibold focus:outline-none">
                       <option value="filter-none">Natural</option>
-                      <option value="filter-pink">Rosie</option>
-                      <option value="filter-warm">Warm</option>
-                      <option value="filter-vintage">Vintage</option>
-                      <option value="filter-b-w">Noir</option>
+                      <option value="filter-pink">Rosie Bloom</option>
+                      <option value="filter-warm">Golden Hour</option>
+                      <option value="filter-vintage">Vintage 90s</option>
+                      <option value="filter-b-w">Noir Classic</option>
                   </select>
               </div>
               <div>
-                  <label class="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Pose</label>
-                  <div class="flex gap-1">
-                      <button onclick="setFrames(2, this)" class="btn-layout flex-1 py-2 bg-white rounded-lg text-[9px] font-bold border border-slate-200">2F</button>
-                      <button onclick="setFrames(3, this)" class="btn-layout flex-1 py-2 bg-white rounded-lg text-[9px] font-bold border border-slate-200">3F</button>
-                      <button onclick="setFrames(4, this)" class="btn-layout flex-1 py-2 bg-pink-500 text-white rounded-lg text-[9px] font-bold border border-pink-500 active">4F</button>
+                  <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Jumlah Pose</label>
+                  <div class="flex gap-1.5">
+                      <button onclick="setFrames(2, this)" class="btn-layout flex-1 py-2 bg-white rounded-lg text-[10px] font-bold border border-slate-200">2F</button>
+                      <button onclick="setFrames(3, this)" class="btn-layout flex-1 py-2 bg-white rounded-lg text-[10px] font-bold border border-slate-200">3F</button>
+                      <button onclick="setFrames(4, this)" class="btn-layout flex-1 py-2 bg-pink-500 text-white rounded-lg text-[10px] font-bold border border-pink-500 active">4F</button>
                   </div>
               </div>
           </div>
         </div>
 
-        <!-- CUSTOM UPLOAD PANEL -->
+        <!-- UPLOAD & SIZE INFO -->
         <div class="glass-card p-4 bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
-            <h3 class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-2">Upload PNG Kustom 📐</h3>
-            <div class="bg-white/80 p-3 rounded-xl border border-indigo-50 space-y-1 mb-3 text-[9px]">
+            <h3 class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-2">Panduan Bingkai Sendiri 📐</h3>
+            <div class="bg-white/80 p-3 rounded-xl border border-indigo-50 space-y-1 mb-3 text-[10px]">
                 <div class="flex justify-between items-center">
-                    <span class="text-slate-400 font-medium">Lebar x Tinggi:</span>
+                    <span class="text-slate-400 font-medium">Ukuran Kanvas:</span>
                     <span class="font-bold text-indigo-600"><span id="info-width">690px</span> x <span id="info-height">1813px</span></span>
                 </div>
             </div>
             
             <div class="space-y-2">
                 <input type="file" id="custom-frame-input" accept="image/png" class="hidden" onchange="handleCustomFrame(this)">
-                <button id="btn-upload-custom" onclick="document.getElementById('custom-frame-input').click()" class="bg-white text-indigo-600 border border-indigo-200 py-2.5 rounded-xl text-[9px] font-extrabold w-full hover:bg-indigo-50 transition">PILIH FILE PNG</button>
+                <button id="btn-upload-custom" onclick="document.getElementById('custom-frame-input').click()" class="bg-white text-indigo-600 border border-indigo-200 py-2.5 rounded-xl text-[10px] font-extrabold w-full shadow-sm hover:bg-indigo-50 transition">UPLOAD PNG BINGKAI</button>
                 <div id="custom-active-status" class="hidden flex items-center justify-between bg-green-50 p-2 rounded-lg border border-green-100">
-                    <span class="text-[8px] font-bold text-green-600 uppercase">Kustom Aktif ✅</span>
-                    <button onclick="clearCustomFrame()" class="text-[8px] font-bold text-red-500 underline">Hapus</button>
+                    <span class="text-[9px] font-bold text-green-600 uppercase italic">Frame Aktif ✅</span>
+                    <button onclick="clearCustomFrame()" class="text-[9px] font-bold text-red-500 underline uppercase">Hapus</button>
                 </div>
-                <p class="text-[7px] text-slate-400 italic text-center">*Foto diletakkan di atas mood namun di bawah bingkai upload.</p>
             </div>
         </div>
         
-        <button id="main-action-btn" onclick="startFullSessi()" class="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-white font-extrabold text-lg shadow-lg mt-auto">AMBIL FOTO 📸</button>
+        <button id="main-action-btn" onclick="startFullSessi()" class="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-white font-extrabold text-lg shadow-lg mt-auto hover:scale-[1.02]">AMBIL FOTO 📸</button>
       </div>
 
-      <!-- CAMERA AREA -->
+      <!-- AREA KAMERA (ORDER-1 DI MOBILE) -->
       <div class="flex-grow flex flex-col min-h-0 order-1 lg:order-2">
         <div class="camera-preview mx-auto">
           <video id="webcam" autoplay playsinline class="filter-none"></video>
-          <div id="countdown" class="serif absolute inset-0 flex items-center justify-center text-white text-[8rem] md:text-[12rem] font-black italic hidden z-20 drop-shadow-lg">3</div>
-          <div id="review-timer-container" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full font-bold text-[10px] hidden z-30 flex items-center gap-2">
-              <span>Next:</span><span id="review-countdown-num" class="text-pink-400 font-black text-base">5</span>
+          <div id="countdown" class="serif absolute inset-0 flex items-center justify-center text-white text-[9rem] md:text-[13rem] font-black italic hidden z-20 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">3</div>
+          <div id="review-timer-container" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full font-bold text-[11px] hidden z-30 flex items-center gap-2 border border-white/20">
+              <span>Next Pose:</span><span id="review-countdown-num" class="text-pink-400 font-black text-lg">5</span>
           </div>
           <div id="captured-overlay" class="absolute inset-0 z-10 hidden bg-black">
               <img id="captured-img" class="w-full h-full object-cover transform scaleX-[-1]" src="">
           </div>
-          <div id="capture-status" class="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full font-extrabold text-slate-800 shadow-xl hidden z-30 flex items-center gap-2 border border-white text-[9px]">
-            <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+          <div id="capture-status" class="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full font-extrabold text-slate-800 shadow-xl hidden z-30 flex items-center gap-2 border border-white text-[10px]">
+            <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
             POSE <span id="photo-count">1</span> / <span id="total-count-display">4</span>
           </div>
         </div>
 
-        <div class="mt-4 flex flex-col items-center gap-3">
+        <!-- Thumbnails -->
+        <div class="mt-3 md:mt-5 flex flex-col items-center gap-3">
             <div id="thumbnail-row" class="flex flex-wrap justify-center gap-2"></div>
-            <div id="pose-controls" class="hidden w-full flex justify-center gap-3">
-                <button id="retake-btn" onclick="retakeCurrentPhoto()" class="bg-slate-100 text-slate-700 px-6 py-2.5 rounded-xl font-extrabold text-xs border border-slate-200">ULANG 🔄</button>
-                <button id="keep-btn" onclick="keepAndNextManually()" class="bg-green-500 text-white px-6 py-2.5 rounded-xl font-extrabold text-xs shadow-md">LANJUT ✨</button>
+            <div id="pose-controls" class="hidden w-full flex justify-center gap-4">
+                <button id="retake-btn" onclick="retakeCurrentPhoto()" class="bg-white text-slate-700 px-8 py-3 rounded-2xl font-extrabold text-sm border-2 border-slate-200 shadow-sm active:bg-slate-50 transition">ULANG 🔄</button>
+                <button id="keep-btn" onclick="keepAndNextManually()" class="bg-green-500 text-white px-8 py-3 rounded-2xl font-extrabold text-sm shadow-lg hover:bg-green-600 active:scale-95 transition">LANJUT ✨</button>
             </div>
         </div>
       </div>
@@ -227,24 +230,24 @@
 
   <!-- VIEW: RESULT -->
   <div id="view-result" class="hidden max-w-6xl mx-auto px-4 py-8 flex flex-col items-center animate-fade-in">
-    <h2 class="serif text-4xl md:text-5xl font-bold text-slate-900 mb-6 text-center">Perfect! ✨</h2>
+    <h2 class="serif text-4xl md:text-5xl font-bold text-slate-900 mb-6 text-center">Perfect Moment! ✨</h2>
     <div class="flex flex-col md:flex-row gap-8 md:gap-12 items-center md:items-start justify-center w-full">
-      <div id="strip-container" class="bg-white p-4 md:p-6 rounded-sm shadow-2xl transition-all duration-700 max-w-[280px] md:max-w-[340px] w-full overflow-hidden">
+      <div id="strip-container" class="bg-white p-4 md:p-6 rounded-sm shadow-2xl transition-all duration-700 max-w-[280px] md:max-w-[340px] w-full overflow-hidden border border-slate-100">
         <canvas id="final-canvas" class="w-full bg-slate-50"></canvas>
       </div>
       <div class="flex flex-col gap-4 w-full max-w-sm">
         <div class="glass-card p-6 bg-gradient-to-br from-white to-pink-50">
           <h3 class="serif text-lg font-bold text-slate-800 mb-4 tracking-tight italic">AI Storyteller ✨</h3>
           <div class="grid grid-cols-2 gap-2 mb-4">
-            <button onclick="generateFuturePrediction()" class="bg-indigo-600 text-white py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-wider">Ramalan</button>
-            <button onclick="analyzeMood()" class="bg-purple-600 text-white py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-wider">Mood</button>
+            <button onclick="generateFuturePrediction()" class="bg-indigo-600 text-white py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md active:scale-95 transition">Ramalan</button>
+            <button onclick="analyzeMood()" class="bg-purple-600 text-white py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md active:scale-95 transition">Mood</button>
           </div>
           <div id="ai-response-container" class="hidden">
-            <div id="ai-response-content" class="text-slate-600 italic text-xs leading-relaxed bg-white/60 p-4 rounded-xl border border-pink-100">...</div>
+            <div id="ai-response-content" class="text-slate-600 italic text-xs leading-relaxed bg-white/60 p-4 rounded-xl border border-pink-100 shadow-inner">...</div>
           </div>
         </div>
-        <button onclick="downloadPhoto()" class="w-full py-4 bg-green-500 text-white font-extrabold rounded-2xl shadow-lg text-base">UNDUH FOTO 📥</button>
-        <button onclick="showBooth()" class="w-full py-4 border-2 border-pink-100 text-pink-500 font-extrabold rounded-2xl hover:bg-white transition text-[10px] uppercase">FOTO LAGI 🔄</button>
+        <button onclick="downloadPhoto()" class="w-full py-4 bg-green-500 text-white font-extrabold rounded-2xl shadow-lg text-base hover:bg-green-600 active:scale-95 transition">UNDUH HASIL 📥</button>
+        <button onclick="showBooth()" class="w-full py-4 border-2 border-pink-100 text-pink-500 font-extrabold rounded-2xl hover:bg-white transition text-[11px] uppercase tracking-wider">FOTO LAGI 🔄</button>
       </div>
     </div>
   </div>
@@ -280,7 +283,8 @@
 
     function checkDevice() {
         isMobileView = window.innerWidth <= 768;
-        const ratio = isMobileView ? "9 / 16" : "16 / 9";
+        // MOBILE RATIO 3:4, DESKTOP RATIO 16:9
+        const ratio = isMobileView ? "3 / 4" : "16 / 9";
         document.documentElement.style.setProperty('--cam-ratio', ratio);
         updateSizeInfo();
     }
@@ -288,9 +292,8 @@
     function updateSizeInfo() {
         const margin = 45; const headerH = 80; const brandingH = 60;
         const pWidth = isMobileView ? 450 : 600;
-        const pHeight = isMobileView ? 800 : 337;
+        const pHeight = isMobileView ? 600 : 337; // 3:4 calculation for mobile (450/3*4)
         
-        // Base content space
         const photoAreaH = (selectedFrameCount * (pHeight + margin));
         const aiAreaH = 200; // Buffer for AI text
         const totalHeight = headerH + margin + photoAreaH + aiAreaH + brandingH;
@@ -315,10 +318,17 @@
     async function startCamera() {
       if (stream) stream.getTracks().forEach(track => track.stop());
       try {
-        const constraints = { video: { width: { ideal: isMobileView?720:1280 }, height: { ideal: isMobileView?1280:720 }, aspectRatio: isMobileView?0.5625:1.7778, facingMode: "user" } };
+        const constraints = { 
+            video: { 
+                width: { ideal: isMobileView ? 960 : 1280 }, 
+                height: { ideal: isMobileView ? 1280 : 720 }, 
+                aspectRatio: isMobileView ? 0.75 : 1.7778, // 3:4 for mobile
+                facingMode: "user" 
+            } 
+        };
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
-      } catch (err) { console.error(err); }
+      } catch (err) { alert("Akses kamera ditolak. Mohon izinkan kamera."); }
     }
 
     function initThumbnails() {
@@ -326,7 +336,7 @@
         for(let i=0; i < selectedFrameCount; i++) {
             const slot = document.createElement('div');
             slot.id = `slot-${i}`;
-            slot.className = "thumbnail-slot flex items-center justify-center text-[7px] font-bold text-slate-400 uppercase";
+            slot.className = "thumbnail-slot flex items-center justify-center text-[7px] font-extrabold text-slate-400 uppercase";
             slot.innerText = `P${i+1}`;
             thumbRow.appendChild(slot);
         }
@@ -334,7 +344,7 @@
     }
 
     function setFrames(count, btn) {
-      selectedFrameCount = count; checkDevice(); initThumbnails();
+      selectedFrameCount = count; updateSizeInfo(); initThumbnails();
       document.querySelectorAll('.btn-layout').forEach(b => b.classList.remove('bg-pink-500', 'text-white', 'border-pink-500'));
       btn.classList.add('bg-pink-500', 'text-white', 'border-pink-500');
     }
@@ -352,7 +362,12 @@
         const reader = new FileReader();
         reader.onload = (e) => {
           const img = new Image();
-          img.onload = () => { customFrameImg = img; document.getElementById('custom-active-status').classList.remove('hidden'); document.getElementById('built-in-frame-panel').classList.add('opacity-40', 'pointer-events-none'); updateSizeInfo(); };
+          img.onload = () => { 
+            customFrameImg = img; 
+            document.getElementById('custom-active-status').classList.remove('hidden');
+            document.getElementById('built-in-frame-panel').classList.add('opacity-40', 'pointer-events-none');
+            updateSizeInfo();
+          };
           img.src = e.target.result;
         };
         reader.readAsDataURL(input.files[0]);
@@ -388,11 +403,14 @@
 
     function capturePhoto() {
         const flash = document.getElementById('flash-effect'); flash.classList.add('active'); setTimeout(() => flash.classList.remove('active'), 500);
-        const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d'); ctx.filter = getComputedStyle(video).filter; ctx.translate(canvas.width, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const canvas = document.createElement('canvas'); 
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d'); 
+        ctx.filter = getComputedStyle(video).filter; ctx.translate(canvas.width, 0); ctx.scale(-1, 1); 
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         capturedPhotos[currentPhotoIdx] = dataUrl;
-        document.getElementById(`slot-${currentPhotoIdx}`).innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover transform scaleX-[-1] rounded-lg">`;
+        document.getElementById(`slot-${currentPhotoIdx}`).innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover transform scaleX-[-1] rounded-md">`;
         capturedImg.src = dataUrl; overlay.classList.remove('hidden'); poseControls.classList.remove('hidden');
         keepBtn.innerText = currentPhotoIdx + 1 === selectedFrameCount ? "FINISH ✨" : "KEEP ✨";
         startReviewTimer();
@@ -430,7 +448,7 @@
     function generateFinalStrip() {
       const margin = 45; 
       const pWidth = isMobileView ? 450 : 600; 
-      const pHeight = isMobileView ? 800 : 337; 
+      const pHeight = isMobileView ? 600 : 337; // 3:4 for mobile, 16:9 for desktop
       const headerH = 80; const brandingH = 60; 
       
       const calcCanvas = document.createElement('canvas');
@@ -451,11 +469,11 @@
       const ctx = canvas.getContext('2d');
       const style = frameStyles[selectedTemplate];
 
-      // LAYER 1: BACKGROUND
+      // Layer 1: Background
       ctx.fillStyle = customFrameImg ? "#ffffff" : style.bg;
       ctx.fillRect(0, 0, sWidth, sHeight);
 
-      // LAYER 2: BUILT-IN TEXT (If no custom frame)
+      // Layer 2: Built-in Text
       if (!customFrameImg) {
           ctx.fillStyle = style.textColor; ctx.textAlign = "center";
           ctx.font = `bold ${selectedTemplate==='sweetheart'?'40':'35'}px '${style.font}'`;
@@ -464,7 +482,7 @@
 
       let drawY = headerH + margin;
 
-      // DRAW ASYNC PHOTOS
+      // Draw Photos
       let loaded = 0;
       capturedPhotos.forEach((data, i) => {
         const img = new Image();
@@ -481,12 +499,12 @@
           loaded++;
           if (loaded === capturedPhotos.length) {
             
-            // LAYER 3: AI TEXT CONTENT (Drawn BELOW photos area)
+            // Layer 3: AI TEXT CONTENT (Drawn BELOW photos area)
             let boxY = drawY + photoAreaH + 15;
             const textColor = customFrameImg ? "#334155" : style.textColor;
 
             if (currentMoodAnalysis) {
-              ctx.fillStyle = "rgba(255,255,255,0.6)"; // Semi-trans so frame is visible behind
+              ctx.fillStyle = "rgba(255,255,255,0.7)"; 
               if (ctx.roundRect) ctx.roundRect(margin, boxY, boxW, moodH, 15); else ctx.rect(margin, boxY, boxW, moodH);
               ctx.fill(); 
               ctx.fillStyle = "#eb4891"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center";
@@ -497,7 +515,7 @@
             }
 
             if (currentFuturePrediction) {
-              ctx.fillStyle = "rgba(255,255,255,0.7)"; 
+              ctx.fillStyle = "rgba(255,255,255,0.8)"; 
               if (ctx.roundRect) ctx.roundRect(margin, boxY, boxW, predH, 15); else ctx.rect(margin, boxY, boxW, predH);
               ctx.fill(); 
               ctx.fillStyle = "#6366f1"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center";
@@ -506,10 +524,13 @@
               wrapText(ctx, currentFuturePrediction, sWidth/2, boxY + 48, boxW - textPadding, 20);
             }
 
-            // LAYER 4: CUSTOM FRAME (Drawn LAST - ON TOP OF EVERYTHING)
+            // Layer 4: Custom Frame (ON TOP OF PHOTOS & AI TEXT BOX BACKGROUNDS)
             if (customFrameImg) {
                 ctx.globalAlpha = 1.0;
                 ctx.drawImage(customFrameImg, 0, 0, sWidth, sHeight);
+                // Redraw text only if custom frame might cover it
+                ctx.fillStyle = "#334155"; ctx.textAlign = "center";
+                // (Text redraw logic can be added here if frame is very opaque)
             }
 
             if (!customFrameImg) {
